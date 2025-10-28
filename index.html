@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ambient Sound Mixer</title>
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div id="theme-selector" class="theme-card">
+    <h1>Choose Your Soundscape</h1>
+    <p>Select a primary theme to start mixing your ambient sound environment.</p>
+
+    <div class="theme-options">
+      <button onclick="setTheme('light')" class="theme-btn light-theme">
+        <div data-lucide="droplets" class="icon"></div>
+        <strong>Nature's Embrace</strong>
+        <p>Chill, Whales, Rain, Forest</p>
+      </button>
+
+      <button onclick="setTheme('dark')" class="theme-btn dark-theme">
+        <div data-lucide="castle" class="icon"></div>
+        <strong>Ancient Crypt</strong>
+        <p>Medieval, Drone, Stone, Chains</p>
+      </button>
+    </div>
+  </div>
+
+  <div id="mixer-app" class="mixer-container hidden">
+    <header>
+      <h1 id="mixer-title">Ambient Mixer</h1>
+      <p id="theme-tag"></p>
+    </header>
+
+    <section class="melody-selector">
+      <h2>Main Melody Track</h2>
+      <div id="melody-options" class="grid"></div>
+    </section>
+
+    <section class="mixer-card">
+      <h2>Ambient Sound Mixer</h2>
+      <div id="ambient-mixer" class="grid"></div>
+    </section>
+
+    <button onclick="resetThemeSelection()" class="theme-switch">
+      <div data-lucide="rotate-ccw" class="icon-small"></div>
+      Change Theme
+    </button>
+  </div>
+
+  <script>
+    let currentTheme = 'light';
+
+    const THEMES = {
+      light: {
+        title: "Nature's Sanctuary",
+        tag: "Light & Chill: Ocean, Forest, Whales",
+        melodies: [
+          { id: 'piano', name: 'Ocean Piano', icon: 'music' },
+          { id: 'flute', name: 'Aether Flute', icon: 'wind' },
+          { id: 'harp', name: 'Celestial Harp', icon: 'sparkles' },
+          { id: 'drone', name: 'Misty Drone', icon: 'waves' },
+        ],
+        ambients: [
+          { id: 'rain', name: 'Rainfall', icon: 'cloud-lightning' },
+          { id: 'birds', name: 'Forest Birds', icon: 'bird' },
+          { id: 'wind', name: 'Gentle Wind', icon: 'wind' },
+          { id: 'whales', name: 'Whale Song', icon: 'fish' },
+          { id: 'crickets', name: 'Summer Crickets', icon: 'bug' },
+          { id: 'river', name: 'Flowing River', icon: 'water' },
+        ]
+      },
+      dark: {
+        title: "Ancient Crypt",
+        tag: "Dark & Mystic: Medieval, Stone, Shadow",
+        melodies: [
+          { id: 'organ', name: 'Crypt Organ', icon: 'skull' },
+          { id: 'spire', name: 'Spire Drone', icon: 'tower-stake' },
+          { id: 'lute', name: 'Lute Dirge', icon: 'guitar' },
+          { id: 'chant', name: 'Monk Chant', icon: 'megaphone' },
+        ],
+        ambients: [
+          { id: 'torch', name: 'Torch Crackle', icon: 'flame' },
+          { id: 'chains', name: 'Rattling Chains', icon: 'link' },
+          { id: 'echo', name: 'Cavern Echo', icon: 'volume-2' },
+          { id: 'thunder', name: 'Distant Thunder', icon: 'zap' },
+          { id: 'stone', name: 'Stone Grinding', icon: 'rocking-chair' },
+          { id: 'owl', name: 'Night Owl', icon: 'moon-star' },
+        ]
+      }
+    };
+
+    const themeSelectorEl = document.getElementById('theme-selector');
+    const mixerAppEl = document.getElementById('mixer-app');
+    const melodyOptionsEl = document.getElementById('melody-options');
+    const ambientMixerEl = document.getElementById('ambient-mixer');
+
+    function setTheme(themeName) {
+      currentTheme = themeName;
+      const theme = THEMES[themeName];
+      document.body.setAttribute('data-theme', themeName);
+
+      document.getElementById('mixer-title').textContent = theme.title;
+      document.getElementById('theme-tag').textContent = theme.tag;
+
+      renderMelodyOptions(theme.melodies);
+      renderAmbientMixer(theme.ambients);
+
+      themeSelectorEl.classList.add('hidden');
+      mixerAppEl.classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function renderMelodyOptions(melodies) {
+      melodyOptionsEl.innerHTML = melodies.map((m, index) => `
+        <label for="melody-${m.id}" class="melody-option" onclick="selectMelody('${m.id}')">
+          <input type="radio" name="main-melody" id="melody-${m.id}" value="${m.id}" ${index === 0 ? 'checked' : ''}>
+          <div class="icon" data-lucide="${m.icon}"></div>
+          <span>${m.name}</span>
+        </label>
+      `).join('');
+      selectMelody(melodies[0].id);
+    }
+
+    function selectMelody(melodyId) {
+      document.querySelectorAll('.melody-option').forEach(el => {
+        const input = el.querySelector('input');
+        if (input.id === `melody-${melodyId}`) {
+          el.classList.add('active');
+          input.checked = true;
+        } else {
+          el.classList.remove('active');
+          input.checked = false;
+        }
+      });
+      console.log("Selected main melody:", melodyId);
+    }
+
+    function renderAmbientMixer(ambients) {
+      ambientMixerEl.innerHTML = ambients.map(a => `
+        <div class="sound-row">
+          <button id="btn-${a.id}" onclick="toggleSound('${a.id}')" class="sound-button">
+            <div class="icon" data-lucide="${a.icon}"></div>
+            <span>${a.name}</span>
+          </button>
+          <div class="volume-control">
+            <label for="volume-${a.id}">Volume</label>
+            <input type="range" id="volume-${a.id}" min="0" max="100" value="70"
+              oninput="updateVolumeVisual('${a.id}', this.value)">
+            <div class="volume-display" id="vol-display-${a.id}">70%</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function toggleSound(soundId) {
+      const button = document.getElementById(`btn-${soundId}`);
+      button.classList.toggle('active');
+      const isPlaying = button.classList.contains('active');
+      const slider = document.getElementById(`volume-${soundId}`);
+      slider.disabled = !isPlaying;
+      slider.style.opacity = isPlaying ? 1 : 0.5;
+      console.log(`Sound ${soundId} is now ${isPlaying ? 'playing' : 'stopped'}.`);
+    }
+
+    function updateVolumeVisual(soundId, value) {
+      document.getElementById(`vol-display-${soundId}`).textContent = `${value}%`;
+      console.log(`Volume for ${soundId}: ${value}%`);
+    }
+
+    function resetThemeSelection() {
+      mixerAppEl.classList.add('hidden');
+      themeSelectorEl.classList.remove('hidden');
+      document.body.removeAttribute('data-theme');
+    }
+
+    window.onload = () => lucide.createIcons();
+  </script>
+</body>
+</html>
