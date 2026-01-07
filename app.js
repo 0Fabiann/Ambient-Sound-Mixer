@@ -239,6 +239,11 @@ class Visualizer {
         this.canvas = document.getElementById(canvasId);
         this.ctx = this.canvas.getContext('2d');
         this.animationId = null;
+<<<<<<< HEAD
+=======
+        this.particles = [];
+        this.visualizationType = 'particles';
+>>>>>>> 0977be064460d88e4315c55ded862293e2787859
 
         this.resize();
         window.addEventListener('resize', () => this.resize());
@@ -249,21 +254,49 @@ class Visualizer {
         this.canvas.height = window.innerHeight;
     }
 
+<<<<<<< HEAD
     // Draw frequency bars visualization (transparent background for video to show through)
     drawBars(frequencyData, theme) {
         // Clear canvas completely for transparency (video shows through)
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
+=======
+    // Initialize particles for ambient effect
+    initParticles(count = 50) {
+        this.particles = [];
+        for (let i = 0; i < count; i++) {
+            this.particles.push({
+                x: Math.random() * this.canvas.width,
+                y: Math.random() * this.canvas.height,
+                radius: Math.random() * 3 + 1,
+                speedX: (Math.random() - 0.5) * 0.5,
+                speedY: (Math.random() - 0.5) * 0.5,
+                opacity: Math.random() * 0.5 + 0.2
+            });
+        }
+    }
+
+    // Draw frequency bars visualization
+    drawBars(frequencyData, theme) {
+>>>>>>> 0977be064460d88e4315c55ded862293e2787859
         const barWidth = (this.canvas.width / frequencyData.length) * 2.5;
         let x = 0;
 
         const gradient = this.ctx.createLinearGradient(0, this.canvas.height, 0, 0);
         if (theme === 'light') {
+<<<<<<< HEAD
             gradient.addColorStop(0, 'rgba(29, 78, 216, 0.7)');
             gradient.addColorStop(1, 'rgba(59, 130, 246, 0.3)');
         } else {
             gradient.addColorStop(0, 'rgba(147, 51, 234, 0.7)');
             gradient.addColorStop(1, 'rgba(168, 85, 247, 0.3)');
+=======
+            gradient.addColorStop(0, 'rgba(29, 78, 216, 0.8)');
+            gradient.addColorStop(1, 'rgba(59, 130, 246, 0.4)');
+        } else {
+            gradient.addColorStop(0, 'rgba(147, 51, 234, 0.8)');
+            gradient.addColorStop(1, 'rgba(168, 85, 247, 0.4)');
+>>>>>>> 0977be064460d88e4315c55ded862293e2787859
         }
 
         for (let i = 0; i < frequencyData.length; i++) {
@@ -281,12 +314,123 @@ class Visualizer {
         }
     }
 
+<<<<<<< HEAD
     // Main render function - only draws bars now
     render(audioMixer, theme) {
         const frequencyData = audioMixer.getFrequencyData();
         if (!frequencyData) return;
 
         this.drawBars(frequencyData, theme);
+=======
+    // Draw floating particles that react to audio
+    drawParticles(frequencyData, theme) {
+        const avgFrequency = frequencyData.reduce((a, b) => a + b, 0) / frequencyData.length;
+        const intensity = avgFrequency / 255;
+
+        this.particles.forEach(particle => {
+            // Update position
+            particle.x += particle.speedX * (1 + intensity * 2);
+            particle.y += particle.speedY * (1 + intensity * 2);
+
+            // Wrap around edges
+            if (particle.x < 0) particle.x = this.canvas.width;
+            if (particle.x > this.canvas.width) particle.x = 0;
+            if (particle.y < 0) particle.y = this.canvas.height;
+            if (particle.y > this.canvas.height) particle.y = 0;
+
+            // Draw particle
+            this.ctx.beginPath();
+            this.ctx.arc(particle.x, particle.y, particle.radius * (1 + intensity), 0, Math.PI * 2);
+
+            if (theme === 'light') {
+                this.ctx.fillStyle = `rgba(29, 78, 216, ${particle.opacity + intensity * 0.3})`;
+            } else {
+                this.ctx.fillStyle = `rgba(147, 51, 234, ${particle.opacity + intensity * 0.3})`;
+            }
+
+            this.ctx.fill();
+        });
+
+        // Draw connections between nearby particles
+        this.particles.forEach((p1, i) => {
+            this.particles.slice(i + 1).forEach(p2 => {
+                const dx = p1.x - p2.x;
+                const dy = p1.y - p2.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < 100) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(p1.x, p1.y);
+                    this.ctx.lineTo(p2.x, p2.y);
+
+                    const opacity = (1 - distance / 100) * 0.2 * (1 + intensity);
+                    if (theme === 'light') {
+                        this.ctx.strokeStyle = `rgba(29, 78, 216, ${opacity})`;
+                    } else {
+                        this.ctx.strokeStyle = `rgba(147, 51, 234, ${opacity})`;
+                    }
+
+                    this.ctx.stroke();
+                }
+            });
+        });
+    }
+
+    // Draw wave visualization
+    drawWaves(frequencyData, theme) {
+        const sliceWidth = this.canvas.width / frequencyData.length;
+
+        // Draw multiple waves
+        for (let wave = 0; wave < 3; wave++) {
+            this.ctx.beginPath();
+
+            let x = 0;
+            for (let i = 0; i < frequencyData.length; i++) {
+                const v = frequencyData[i] / 255;
+                const y = this.canvas.height / 2 +
+                          Math.sin(i * 0.1 + wave * 2) * v * 100 * (1 - wave * 0.3);
+
+                if (i === 0) {
+                    this.ctx.moveTo(x, y);
+                } else {
+                    this.ctx.lineTo(x, y);
+                }
+                x += sliceWidth;
+            }
+
+            const opacity = 0.5 - wave * 0.15;
+            if (theme === 'light') {
+                this.ctx.strokeStyle = `rgba(29, 78, 216, ${opacity})`;
+            } else {
+                this.ctx.strokeStyle = `rgba(147, 51, 234, ${opacity})`;
+            }
+
+            this.ctx.lineWidth = 3 - wave;
+            this.ctx.stroke();
+        }
+    }
+
+    // Main render function
+    render(audioMixer, theme) {
+        // Clear canvas with semi-transparent background for trail effect
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+        const frequencyData = audioMixer.getFrequencyData();
+        if (!frequencyData) return;
+
+        switch (this.visualizationType) {
+            case 'bars':
+                this.drawBars(frequencyData, theme);
+                break;
+            case 'particles':
+                this.drawParticles(frequencyData, theme);
+                break;
+            case 'waves':
+                this.drawWaves(frequencyData, theme);
+                break;
+        }
+>>>>>>> 0977be064460d88e4315c55ded862293e2787859
     }
 
     // Start animation loop
@@ -306,6 +450,17 @@ class Visualizer {
         }
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     }
+<<<<<<< HEAD
+=======
+
+    // Set visualization type
+    setVisualization(type) {
+        this.visualizationType = type;
+        if (type === 'particles') {
+            this.initParticles();
+        }
+    }
+>>>>>>> 0977be064460d88e4315c55ded862293e2787859
 }
 
 // ==================== VIDEO API ====================
@@ -512,6 +667,10 @@ class AmbientMixerApp {
 
         // Initialize visualizer
         this.visualizer = new Visualizer('visualizer-canvas');
+<<<<<<< HEAD
+=======
+        this.visualizer.initParticles();
+>>>>>>> 0977be064460d88e4315c55ded862293e2787859
 
         // Initialize video background
         this.videoBackground = new VideoBackground('bg-video');
@@ -572,6 +731,16 @@ class AmbientMixerApp {
         this.audioMixer.playMelody(melodyId);
     }
 
+<<<<<<< HEAD
+=======
+    // Change visualization type
+    setVisualization(type) {
+        if (this.visualizer) {
+            this.visualizer.setVisualization(type);
+        }
+    }
+
+>>>>>>> 0977be064460d88e4315c55ded862293e2787859
     // Toggle video background
     toggleVideo() {
         if (this.videoBackground) {
@@ -613,6 +782,9 @@ class AmbientMixerApp {
 // Create global app instance
 const app = new AmbientMixerApp();
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 0977be064460d88e4315c55ded862293e2787859
 // Export for use in HTML
 window.AmbientMixerApp = app;
