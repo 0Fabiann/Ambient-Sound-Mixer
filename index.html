@@ -12,6 +12,25 @@
 </head>
 <body>
 
+  <!-- VIDEO BACKGROUND (Video API) -->
+  <video id="bg-video" class="video-background" autoplay loop muted playsinline>
+    <source src="" type="video/mp4">
+  </video>
+
+  <!-- CANVAS VISUALIZATION (Canvas API) -->
+  <canvas id="visualizer-canvas" class="visualizer-canvas"></canvas>
+
+  <!-- LOADING OVERLAY -->
+  <div id="loading-overlay" class="loading-overlay hidden">
+    <div class="loading-content">
+      <div class="loading-spinner"></div>
+      <p id="loading-text">Loading sounds...</p>
+      <div class="loading-bar">
+        <div id="loading-progress" class="loading-progress"></div>
+      </div>
+    </div>
+  </div>
+
   <div id="theme-selector" class="theme-card">
     <h1>Choose Your Soundscape</h1>
     <p>Select a primary theme to start mixing your ambient sound environment.</p>
@@ -47,11 +66,27 @@
       <div id="ambient-mixer" class="grid"></div>
     </section>
 
+    <!-- VIDEO CONTROLS -->
+    <section class="controls-card">
+      <h2>Background Video</h2>
+      <div class="controls-grid">
+        <div class="control-group">
+          <button onclick="toggleVideoBackground()" class="video-toggle-btn" id="video-toggle">
+            <div data-lucide="video" class="icon-small"></div>
+            <span id="video-status">Video On</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
     <button onclick="resetThemeSelection()" class="theme-switch">
       <div data-lucide="rotate-ccw" class="icon-small"></div>
       Change Theme
     </button>
   </div>
+
+  <!-- Include the main application script -->
+  <script src="app.js"></script>
 
   <script>
     let currentTheme = 'light';
@@ -67,12 +102,12 @@
           { id: 'drone', name: 'Misty Drone', icon: 'waves' },
         ],
         ambients: [
-          { id: 'rain', name: 'Rainfall', icon: 'cloud-lightning' },
+          { id: 'rain', name: 'Rainfall', icon: 'cloud-rain' },
           { id: 'birds', name: 'Forest Birds', icon: 'bird' },
           { id: 'wind', name: 'Gentle Wind', icon: 'wind' },
           { id: 'whales', name: 'Whale Song', icon: 'fish' },
           { id: 'crickets', name: 'Summer Crickets', icon: 'bug' },
-          { id: 'river', name: 'Flowing River', icon: 'water' },
+          { id: 'river', name: 'Flowing River', icon: 'droplets' },
         ]
       },
       dark: {
@@ -80,8 +115,8 @@
         tag: "Dark & Mystic: Medieval, Stone, Shadow",
         melodies: [
           { id: 'organ', name: 'Crypt Organ', icon: 'skull' },
-          { id: 'spire', name: 'Spire Drone', icon: 'tower-stake' },
-          { id: 'lute', name: 'Lute Dirge', icon: 'guitar' },
+          { id: 'spire', name: 'Spire Drone', icon: 'mountain' },
+          { id: 'lute', name: 'Lute Dirge', icon: 'music' },
           { id: 'chant', name: 'Monk Chant', icon: 'megaphone' },
         ],
         ambients: [
@@ -89,8 +124,8 @@
           { id: 'chains', name: 'Rattling Chains', icon: 'link' },
           { id: 'echo', name: 'Cavern Echo', icon: 'volume-2' },
           { id: 'thunder', name: 'Distant Thunder', icon: 'zap' },
-          { id: 'stone', name: 'Stone Grinding', icon: 'rocking-chair' },
-          { id: 'owl', name: 'Night Owl', icon: 'moon-star' },
+          { id: 'stone', name: 'Stone Grinding', icon: 'mountain' },
+          { id: 'owl', name: 'Night Owl', icon: 'moon' },
         ]
       }
     };
@@ -100,7 +135,8 @@
     const melodyOptionsEl = document.getElementById('melody-options');
     const ambientMixerEl = document.getElementById('ambient-mixer');
 
-    function setTheme(themeName) {
+    // Set theme and initialize app
+    async function setTheme(themeName) {
       currentTheme = themeName;
       const theme = THEMES[themeName];
       document.body.setAttribute('data-theme', themeName);
@@ -114,6 +150,13 @@
       themeSelectorEl.classList.add('hidden');
       mixerAppEl.classList.remove('hidden');
       lucide.createIcons();
+
+      // Initialize the audio/visual app with the selected theme
+      await app.setTheme(themeName);
+
+      // Set video toggle button to active state (video auto-plays)
+      document.getElementById('video-toggle').classList.add('active');
+      document.getElementById('video-status').textContent = 'Video On';
     }
 
     function renderMelodyOptions(melodies) {
@@ -124,9 +167,9 @@
           <span>${m.name}</span>
         </label>
       `).join('');
-      selectMelody(melodies[0].id);
     }
 
+    
     function selectMelody(melodyId) {
       document.querySelectorAll('.melody-option').forEach(el => {
         const input = el.querySelector('input');
@@ -138,7 +181,8 @@
           input.checked = false;
         }
       });
-      console.log("Selected main melody:", melodyId);
+      // Play the melody using Audio API
+      app.selectMelody(melodyId);
     }
 
     function renderAmbientMixer(ambients) {
@@ -151,32 +195,54 @@
           <div class="volume-control">
             <label for="volume-${a.id}">Volume</label>
             <input type="range" id="volume-${a.id}" min="0" max="100" value="70"
-              oninput="updateVolumeVisual('${a.id}', this.value)">
+              oninput="updateVolume('${a.id}', this.value)">
             <div class="volume-display" id="vol-display-${a.id}">70%</div>
           </div>
         </div>
       `).join('');
     }
 
+    // Toggle ambient sound using Audio API
     function toggleSound(soundId) {
       const button = document.getElementById(`btn-${soundId}`);
+      const wasPlaying = button.classList.contains('active');
+
+      // Toggle the sound using Audio API
+      app.toggleSound(soundId);
+
       button.classList.toggle('active');
-      const isPlaying = button.classList.contains('active');
+      const isPlaying = !wasPlaying;
       const slider = document.getElementById(`volume-${soundId}`);
       slider.disabled = !isPlaying;
       slider.style.opacity = isPlaying ? 1 : 0.5;
-      console.log(`Sound ${soundId} is now ${isPlaying ? 'playing' : 'stopped'}.`);
     }
 
-    function updateVolumeVisual(soundId, value) {
+    // Update volume using Audio API
+    function updateVolume(soundId, value) {
       document.getElementById(`vol-display-${soundId}`).textContent = `${value}%`;
-      console.log(`Volume for ${soundId}: ${value}%`);
+      app.setVolume(soundId, parseInt(value));
     }
 
+    // Toggle video background using Video API
+    function toggleVideoBackground() {
+      const isPlaying = app.toggleVideo();
+      const statusEl = document.getElementById('video-status');
+      const toggleBtn = document.getElementById('video-toggle');
+
+      statusEl.textContent = isPlaying ? 'Video On' : 'Video Off';
+      toggleBtn.classList.toggle('active', isPlaying);
+    }
+
+    // Reset theme selection
     function resetThemeSelection() {
+      app.reset();
       mixerAppEl.classList.add('hidden');
       themeSelectorEl.classList.remove('hidden');
       document.body.removeAttribute('data-theme');
+
+      // Reset video toggle state
+      document.getElementById('video-toggle').classList.remove('active');
+      document.getElementById('video-status').textContent = 'Video Off';
     }
 
     window.onload = () => lucide.createIcons();
